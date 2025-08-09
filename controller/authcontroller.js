@@ -6,6 +6,7 @@ const PasswordReset = require("../models/PasswordReset");
 const router = require('../routes/auth');
 const {Resend} = require('resend');
 const passport = require('../config/passport');
+const nodemailer = require("nodemailer");
 
 
 const handleErrors=(err)=>{
@@ -91,6 +92,7 @@ const getId = async(req,res)=>{
 }
 
 //Password forgot
+
 const forgotPassword = async (req, res) => {
   const { email } = req.body;
   const user = await User.findOne({ email });
@@ -99,24 +101,33 @@ const forgotPassword = async (req, res) => {
   const secret = process.env.JWT_SECRET + user.password;
   const token = jwt.sign({ id: user._id, email: user.email }, secret, { expiresIn: '1h' });
   const link = `${process.env.FRONTEND_URL}/pages/ResetPassword/${user._id}/${token}`;
-const resend = new Resend(process.env.RESEND_API_KEY);
-    try {
-   await resend.emails.send({
-      from: 'onboarding@resend.dev',
-      to: user.email,
-      subject: 'Reset Your Password',
-      html: `<p>Click the link below to reset your password:</p><a href="${link}">${link}</a>`,
-      tags: [{ name: 'category', value: 'password_reset' }],
-    });
-    console.log('Resend success:');
 
-    return res.json({ message: 'Password reset link sent' });
- } catch (err) {
-    console.error('Resend error:', err);
-    return res.status(500).json({ error: 'Failed to send reset email' });
+  // Create transporter for Gmail
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: "cyberconstruct@gmail.com", // your Gmail
+      pass: "your_gmail_app_password", // use app password (not your real password)
+    },
+  });
+
+  try {
+    await transporter.sendMail({
+      from: '"Cyber Construct" <cyberconstruct@gmail.com>',
+      to: user.email,
+      subject: "Reset Your Password",
+      html: `<p>Click the link below to reset your password:</p>
+             <a href="${link}">${link}</a>`,
+    });
+
+    console.log("Password reset email sent successfully.");
+    return res.json({ message: "Password reset link sent" });
+  } catch (err) {
+    console.error("Email sending error:", err);
+    return res.status(500).json({ error: "Failed to send reset email" });
   }
-  
 };
+
 
 
 //Password reset
