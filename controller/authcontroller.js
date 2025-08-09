@@ -43,7 +43,11 @@ const signup = async (req, res)=>{
     await user.save();
     
     const token = createToken(user._id);
-    res.cookie('jwt', token, {httponly:true, maxAge:maxAge*1000})
+    res.cookie('jwt', token, {httpOnly: true,
+  sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
+  secure: process.env.NODE_ENV === 'production',
+  path: '/',
+  maxAge: maxAge * 1000})
     
     res.status(201).json({ message: 'User created successfully' });
   } catch (err) {
@@ -53,9 +57,10 @@ const signup = async (req, res)=>{
   }
 };
 
-// login or SignIn
-const login = async (req, res)=>{ 
-const { email, password } = req.body;
+
+//Login
+const login = async (req, res) => { 
+  const { email, password } = req.body;
   try {
     const user = await User.findOne({ email });
     if (!user) return res.status(400).json({ error: 'Email incorrect' });
@@ -63,24 +68,35 @@ const { email, password } = req.body;
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ error: 'Password incorrect' });
 
-    const token = jwt.sign({ userId: user._id }, 'your_jwt_secret');
-    res.json({ token });
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+
+    res.cookie('jwt', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
+      path: '/',
+      maxAge: 60 * 60 * 1000 // 1 hour
+    });
+
+    res.status(200).json({ message: 'Login successful' });
   } catch (err) {
-    const errors = handleErrors(err);
-    res.status(500).json({ errors });
+    console.error(err);
+    res.status(500).json({ error: 'Something went wrong' });
   }
-}
+};
+
 
 // logout
 const logout= async(req,res)=>{
 res.clearCookie('jwt', {
-    httpOnly: true,
-    sameSite: 'Strict', // match how you set it
-    secure: process.env.NODE_ENV === 'production',
-    path: '/',           // match original path
+   httpOnly: true,
+  sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
+  secure: process.env.NODE_ENV === 'production',
+  path: '/'
   });
   res.status(200).json({ message: 'Successfully logged out' });
 }
+
 const getId = async(req,res)=>{
   const id=req.params.id;
   User.findById(id)
@@ -134,35 +150,64 @@ const forgotPassword = async (req, res) => {
 const resetPassword = async (req, res) => {
   const { id, token } = req.params;
   const { password } = req.body;
+
   const user = await User.findById(id);
   if (!user) return res.status(404).json({ msg: "User not found" });
 
   const secret = process.env.JWT_SECRET + user.password;
+
   try {
     jwt.verify(token, secret);
+
     const isSame = await bcrypt.compare(password, user.password);
     if (isSame) {
-      return res
-        .status(400)
-        .json({ error: 'New password cannot be the same as the old one.' });
+      return res.status(400).json({
+        error: 'New password cannot be the same as the old one.'
+      });
     }
+
     const hashed = await bcrypt.hash(password, 10);
     user.password = hashed;
     await user.save();
-    res.clearCookie('jwt', {/* matching flags */});
+
+    // Clear any existing session cookie (logout everywhere)
+    res.clearCookie('jwt', {
+      httpOnly: true,
+      sameSite: 'Strict',
+      secure: process.env.NODE_ENV === 'production',
+      path: '/'
+    });
+
     res.json({ msg: 'Password reset successful' });
+
   } catch (e) {
     res.status(400).json({ msg: 'Invalid or expired token' });
   }
-}
+};
+
 
 // google Auth
  
-const googleVerification= (req, res) => {
-    const token = jwt.sign({ userId: req.user._id }, process.env.JWT_SECRET);
-    // Redirect to frontend with token
-    res.redirect(`${process.env.FRONTEND_URL}/auth/authSuccess?token=${token}`);
-  };
+const googleVerification = (req, res) => {
+  const token = jwt.sign(
+    { userId: req.user._id },
+    process.env.JWT_SECRET,
+    { expiresIn: '1h' }
+  );
+
+  // Set secure HTTP-only cookie
+  res.cookie('jwt', token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production', // only secure in production
+    sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
+    path: '/',
+    maxAge: 60 * 60 * 1000 // 1 hour
+  });
+
+  // Redirect to frontend without sending token in URL
+  res.redirect(`${process.env.FRONTEND_URL}/auth/authSuccess`);
+};
+
 
 module.exports = {
     signup,
