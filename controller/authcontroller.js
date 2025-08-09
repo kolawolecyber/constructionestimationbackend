@@ -205,7 +205,7 @@ const googleVerification = (req, res) => {
   });
 
   // Redirect to frontend without sending token in URL
-  res.redirect(`${process.env.FRONTEND_URL}/auth/authSuccess`);
+  res.redirect(`${process.env.FRONTEND_URL}/auth/authSuccess?token=${token}`);
 };
 
 
