@@ -1,13 +1,13 @@
-const express = require('express');
+
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
-const PasswordReset = require("../models/PasswordReset"); 
-const router = require('../routes/auth');
-const {Resend} = require('resend');
-const passport = require('../config/passport');
+
+
+
 const nodemailer = require("nodemailer");
 
+const JWT_SECRET = process.env.JWT_SECRET;
 
 const handleErrors=(err)=>{
   console.log(err.message, err.code)
@@ -26,7 +26,7 @@ return errors;
 
 const maxAge = 3*24*60*60;
 const createToken= id =>{
-    return jwt.sign({id}, 'your_jwt_secret', {expiresIn:maxAge})
+    return jwt.sign({id}, JWT_SECRET, {expiresIn:maxAge})
 }
 
 // signup 
@@ -68,14 +68,14 @@ const login = async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ error: 'Password incorrect' });
 
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: '1h' });
 
     res.cookie('jwt', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
       path: '/',
-      maxAge: 60 * 60 * 1000 // 1 hour
+      maxAge: maxAge * 10 // 1 hour
     });
 
     res.status(200).json({ message: 'Login successful'});
@@ -96,7 +96,7 @@ const getMe= (req, res) => {
   if (!token) return res.status(401).json({ authenticated: false });
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, JWT_SECRET);
     res.json({ authenticated: true, user: decoded });
   } catch (err) {
     res.status(401).json({ authenticated: false });
