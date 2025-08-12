@@ -153,7 +153,7 @@ const forgotPassword = async (req, res) => {
       to: user.email,
       subject: "Reset Your Password",
       html: `<p>Click the link below to reset your password:</p>
-             <a href="${link}">${link}</a>`,
+             <button ><a href="${link}">${link}</a></button>`,
     });
 
     console.log("Password reset email sent successfully.");
