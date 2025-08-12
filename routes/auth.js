@@ -24,7 +24,9 @@ router.post('/forgot_password', authcontroller.forgotPassword);
 router.post('/reset_password/:id/:token', authcontroller.resetPassword);
 
 //for protected route
-router.get('/me', authcontroller.getMe);
+router.get('/me',
+  requireAuth, authcontroller.getMe);
+  
 //google Auth
 router.get('/google',  passport.authenticate('google', { scope: ['profile', 'email'] }));
 
