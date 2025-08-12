@@ -92,7 +92,7 @@ const login = async (req, res) => {
 
 //authentication for cookie with frontend
 const getMe= (req, res) => {
-  const token = req.cookies.token || req.headers.authorization?.split(" ")[1];
+  const token = req.cookies.jwt || req.headers.authorization?.split(" ")[1];
   if (!token) return res.status(401).json({ authenticated: false });
 
   try {
@@ -115,6 +115,7 @@ res.clearCookie('jwt', {
   res.status(200).json({ message: 'Successfully logged out' });
 }
 
+//get by ID
 const getId = async(req,res)=>{
   const id=req.params.id;
   User.findById(id)

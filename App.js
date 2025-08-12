@@ -6,6 +6,7 @@ const authRoutes = require('./routes/auth');
 const passport = require('passport');
 require('./config/passport');
 const session = require('express-session'); 
+const cookieParser = require("cookie-parser");
 
 const app = express();
 const allowedOrigin = process.env.FRONTEND_URL;
@@ -15,6 +16,7 @@ app.use(cors({
 }));
 
 app.use(express.json());
+app.use(cookieParser());
 
 mongoose.connect(process.env.dbURI)
   .then(() => console.log('MongoDB connected'))
