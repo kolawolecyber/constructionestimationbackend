@@ -27,7 +27,7 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: false,            // set true in production under HTTPS
+    secure: true,            // set true in production under HTTPS
     sameSite: 'lax'
   }
 }));
