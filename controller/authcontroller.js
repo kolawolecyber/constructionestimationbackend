@@ -34,8 +34,12 @@ const signup = async (req, res)=>{
   const { name, profession, phone, email, password } = req.body;
 
  try {
-    let user = await User.findOne({ email });
-     user = new User({ name,profession, phone, email, password});
+   let existingUser = await User.findOne({ email });
+if (existingUser) {
+  return res.status(400).json({ error: "Email already registered" });
+}
+
+let user = new User({ name,profession, phone, email, password});
      await user.validate();
     const salt = await bcrypt.genSalt();
     user.password = await bcrypt.hash(password, salt);
@@ -72,8 +76,8 @@ const login = async (req, res) => {
 
     res.cookie('jwt', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
+      secure: false,
+      sameSite:  'Lax',
       path: '/',
       maxAge: maxAge * 1000 // 1 hour
     });
