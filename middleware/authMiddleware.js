@@ -3,7 +3,7 @@ const User = require("../models/User"); // import your user model
 
 const requireAuth = (req, res, next) => {
   // 1. Get token from cookies or Authorization header
-  let token = req.cookies?.token;
+  let token = req.cookies?.jwt;
   if (!token && req.headers.authorization?.startsWith("Bearer ")) {
     token = req.headers.authorization.split(" ")[1];
   }
@@ -25,12 +25,8 @@ const requireAuth = (req, res, next) => {
 };
 
 
-
-
-
-
 const checkUser = async (req, res, next) => {
-  let token = req.cookies?.token;
+  let token = req.cookies?.jwt;
   if (!token && req.headers.authorization?.startsWith("Bearer ")) {
     token = req.headers.authorization.split(" ")[1];
   }
