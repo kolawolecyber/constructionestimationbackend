@@ -24,8 +24,9 @@ return errors;
 }
 
 const maxAge = 1*24*60*60;
-const createToken= id =>{
-    return jwt.sign({id}, JWT_SECRET, {expiresIn:maxAge})
+
+const createToken= userId =>{
+    return jwt.sign({userId}, JWT_SECRET, {expiresIn:maxAge})
 }
 
 // signup 
@@ -67,7 +68,7 @@ const login = async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ error: 'Password incorrect' });
 
-    const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: '1h' });
+    const token = createToken(user._id);
 
     res.cookie('jwt', token, {
       httpOnly: true,
@@ -91,14 +92,15 @@ const login = async (req, res) => {
 
 //authentication for cookie with frontend
 const getMe= (req, res) => {
-  const token = req.cookies.jwt || req.headers.authorization?.split(" ")[1];
+  const token = req.cookies.jwt ;
   if (!token) return res.status(401).json({ authenticated: false });
 
   try {
+
     const decoded = jwt.verify(token, JWT_SECRET);
-    res.json({ authenticated: true, user: decoded.id || decoded.userId});
+    res.json({ authenticated: true, user:decoded.userId});
   } catch (err) {
-    res.status(401).json({ authenticated: false });
+     res.status(401).json({ authenticated: false, message: "Invalid token" });
   }
 };
 
