@@ -78,10 +78,28 @@ const login = async (req, res) => {
       maxAge: 60 * 60 * 1000 // 1 hour
     });
 
-    res.status(200).json({ message: 'Login successful' });
+    res.status(200).json({ message: 'Login successful'});
+    
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Something went wrong' });
+  }
+};
+
+
+
+
+
+
+const getMe= (req, res) => {
+  const token = req.cookies.token || req.headers.authorization?.split(" ")[1];
+  if (!token) return res.status(401).json({ authenticated: false });
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    res.json({ authenticated: true, user: decoded });
+  } catch (err) {
+    res.status(401).json({ authenticated: false });
   }
 };
 
@@ -216,6 +234,7 @@ module.exports = {
     logout,
     forgotPassword,
     resetPassword,
-    googleVerification
+    googleVerification,
+    getMe
    
 }

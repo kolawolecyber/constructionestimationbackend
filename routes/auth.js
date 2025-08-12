@@ -23,6 +23,8 @@ router.post('/forgot_password', authcontroller.forgotPassword);
 //reset password
 router.post('/reset_password/:id/:token', authcontroller.resetPassword);
 
+//for protected route
+router.get('/api/auth/me', authcontroller.getMe);
 //google Auth
 router.get('/google',  passport.authenticate('google', { scope: ['profile', 'email'] }));
 
