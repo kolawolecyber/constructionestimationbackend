@@ -23,7 +23,7 @@ Object.values(err.errors).forEach(({properties})=>{
 return errors;
 }
 
-const maxAge = 3*24*60*60;
+const maxAge = 1*24*60*60;
 const createToken= id =>{
     return jwt.sign({id}, JWT_SECRET, {expiresIn:maxAge})
 }
@@ -74,7 +74,7 @@ const login = async (req, res) => {
       secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
       path: '/',
-      maxAge: maxAge * 10 // 1 hour
+      maxAge: maxAge * 1000 // 1 hour
     });
 
     res.status(200).json({ message: 'Login successful'});
