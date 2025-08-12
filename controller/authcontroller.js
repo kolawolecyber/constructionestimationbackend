@@ -96,7 +96,7 @@ const getMe= (req, res) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    res.json({ authenticated: true, user: decoded });
+    res.json({ authenticated: true, user: decoded.id || decoded.userId});
   } catch (err) {
     res.status(401).json({ authenticated: false });
   }
