@@ -23,7 +23,7 @@ Object.values(err.errors).forEach(({properties})=>{
 return errors;
 }
 
-const maxAge = 1*24*60*60;
+const maxAge = 1*24*60*60*100;
 
 const createToken= userId =>{
     return jwt.sign({userId}, JWT_SECRET, {expiresIn:maxAge})
@@ -35,6 +35,7 @@ const signup = async (req, res)=>{
 
  try {
    let existingUser = await User.findOne({ email });
+  
 if (existingUser) {
   return res.status(400).json({ error: "Email already registered" });
 }
@@ -76,13 +77,13 @@ const login = async (req, res) => {
 
     res.cookie('jwt', token, {
       httpOnly: true,
-      secure: false,
-      sameSite:  'Lax',
-      path: '/',
+     sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
+  secure: process.env.NODE_ENV === 'production', 
+       
       maxAge: maxAge * 1000 // 1 hour
     });
-
-    res.status(200).json({ message: 'Login successful'});
+console.log("token is "+ token)
+    res.status(200).json({user:user._id, message: 'Login successful'});
     
   } catch (err) {
     console.error(err);
@@ -91,21 +92,13 @@ const login = async (req, res) => {
 };
 
 
-
-
-
 //authentication for cookie with frontend
-const getMe= (req, res) => {
-  const token = req.cookies.jwt ;
-  if (!token) return res.status(401).json({ authenticated: false });
-
-  try {
-
-    const decoded = jwt.verify(token, JWT_SECRET);
-    res.json({ authenticated: true, user:decoded.userId});
-  } catch (err) {
-     res.status(401).json({ authenticated: false, message: "Invalid token" });
+const getMe = (req, res) => {
+  if (!req.user) {
+    return res.status(401).json({ authenticated: false, message: "No user found" });
   }
+
+  res.json({ authenticated: true, user: req.user });
 };
 
 
@@ -138,8 +131,15 @@ const forgotPassword = async (req, res) => {
   const user = await User.findOne({ email });
   if (!user) return res.status(404).json({ msg: "User not found" });
 
-  const secret = process.env.JWT_SECRET + user.password;
-  const token = jwt.sign({ id: user._id, email: user.email }, secret, { expiresIn: '1h' });
+  
+  const token = jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '1h' });
+
+  res.cookie('resetToken', token, {
+  httpOnly: true,
+  sameSite: 'Strict',
+  secure: process.env.NODE_ENV === 'production',
+  maxAge: 60 * 60 * 1000 // 1 hour
+});
   const link = `${process.env.FRONTEND_URL}/pages/ResetPassword/${user._id}/${token}`;
 
   // Create transporter for Gmail
@@ -178,11 +178,11 @@ const resetPassword = async (req, res) => {
   const user = await User.findById(id);
   if (!user) return res.status(404).json({ msg: "User not found" });
 
-  const secret = process.env.JWT_SECRET + user.password;
 
+console.log('resetting password...' )
   try {
-    jwt.verify(token, secret);
-
+    jwt.verify(token, process.env.JWT_SECRET);
+console.log('verified!........', process.env.JWT_SECRET )
     const isSame = await bcrypt.compare(password, user.password);
     if (isSame) {
       return res.status(400).json({
@@ -195,12 +195,7 @@ const resetPassword = async (req, res) => {
     await user.save();
 
     // Clear any existing session cookie (logout everywhere)
-    res.clearCookie('jwt', {
-      httpOnly: true,
-      sameSite: 'Strict',
-      secure: process.env.NODE_ENV === 'production',
-      path: '/'
-    });
+   res.clearCookie('resetToken');
 
     res.json({ msg: 'Password reset successful' });
 

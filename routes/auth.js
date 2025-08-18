@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const authcontroller = require('../controller/authcontroller');
-const { requireAuth,checkUser} = require('../middleware/authMiddleware');
+const { requireAuth} = require('../middleware/authMiddleware');
 const passport = require('passport');
 
 // Register
@@ -12,7 +12,7 @@ router.post('/login', authcontroller.login);
 
 //GetId
 router.get('/get',  requireAuth,
-  checkUser, authcontroller.getId);
+ authcontroller.getId);
 
   //Logout
 router.post('/logout', authcontroller.logout);
@@ -24,13 +24,13 @@ router.post('/forgot_password', authcontroller.forgotPassword);
 router.post('/reset_password/:id/:token', authcontroller.resetPassword);
 
 //for protected route
-router.get('/me',
-  requireAuth, authcontroller.getMe);
+router.get('/me',requireAuth,
+ authcontroller.getMe);
   
 //google Auth
 router.get('/google',  passport.authenticate('google', { scope: ['profile', 'email'] }));
 
-// google call vack verify
+// google call vack verify 
 router.get('/google/callback',
   passport.authenticate('google', {
     failureRedirect: '/login',
