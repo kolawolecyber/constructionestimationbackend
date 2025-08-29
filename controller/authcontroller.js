@@ -147,7 +147,7 @@ const forgotPassword = async (req, res) => {
     service: "gmail",
     auth: {
       user: "cyberkonstruct@gmail.com", // your Gmail
-      pass: "plri gxlo sgvy myur", // use app password (not your real password)
+      pass: process.env.PASSWORD, // use app password (not your real password)
     },
   });
 
